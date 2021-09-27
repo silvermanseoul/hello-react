@@ -48,13 +48,15 @@ class Game extends React.Component {
     super(props);
     this.state = {
       history: [{ squares: Array(9).fill(null) }],
+      moveNumber: 0,
       xIsNext: true,
     };
   }
 
   handleClick(i) {
     // 불변성 유지
-    const history = this.state.history;
+    // moveNumber에 따라, 현재 선택된 이동보다 나중의 이동 기록은 history에서 날려버림
+    const history = this.state.history.slice(0, this.state.moveNumber + 1);
     const current = history[history.length - 1];
     const squares = current.squares.slice();
 
@@ -66,20 +68,38 @@ class Game extends React.Component {
     squares[i] = this.state.xIsNext ? 'X' : 'O';
     this.setState({
       history: history.concat([{ squares: squares }]),
+      moveNumber: history.length,
       xIsNext: !this.state.xIsNext,
     });
   }
 
+  // 이동이 선택되면 moveNumber 변경
+  jumpTo(moveId) {
+    this.setState({ moveNumber: moveId, xIsNext: moveId % 2 === 0 });
+  }
+
   render() {
     const history = this.state.history;
-    const current = history[history.length - 1];
+
+    // moveNumber에 따라, 현재 선택된 이동을 렌더링
+    const current = history[this.state.moveNumber];
     const winner = calculateWinner(current.squares);
+
     let status;
     if (winner) {
       status = 'Winner: ' + winner;
     } else {
       status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
     }
+
+    const moves = history.map((move, moveId) => {
+      const desc = moveId ? 'Go to move #' + moveId : 'Go to game start';
+      return (
+        <li key={moveId}>
+          <button onClick={() => this.jumpTo(moveId)}>{desc}</button>
+        </li>
+      );
+    });
 
     return (
       <div className="game">
@@ -91,7 +111,7 @@ class Game extends React.Component {
         </div>
         <div className="game-info">
           <div>{status}</div>
-          <ol>{/* TODO */}</ol>
+          <ol>{moves}</ol>
         </div>
       </div>
     );
